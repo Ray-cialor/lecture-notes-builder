@@ -178,12 +178,7 @@ def fix_toc(path):
 # ---------- 阶段 5：构建 ----------
 def build(md_path, out_path):
     import pypandoc
-    WIDTHS = {"thevenin_norton.png": "15", "loesungsschema_boxen.png": "15",
-              "beispiel_ersatzquelle.png": "12", "ergebnis_aequivalent.png": "15",
-              "spannungsteiler_belastet.png": "15", "arbeitsgerade_formel.png": "13",
-              "kennlinie_dioden.png": "8", "diode_kreis.png": "11.5",
-              "arbeitsgerade_graph.png": "10", "loesung_werte.png": "10",
-              "stromteiler.png": "7", "spannungsteiler.png": "6"}  # cm，新图按内容宽高比补充
+    WIDTHS = {}  # 可选：按资产名硬编码宽度（cm）；留空则全部走自动定宽
     s = open(md_path, encoding="utf-8").read()
 
     def im(m):

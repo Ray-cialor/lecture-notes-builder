@@ -1,5 +1,7 @@
 ---
 name: lecture-notes-builder
+version: 1.0.0
+license: MIT
 description: This skill should be used when the user wants to create, update, or export detailed bilingual (German→Chinese) lecture study notes from course PDFs — e.g. "根据 Skript 第 X 章做详解", "把老师课上讲的内容补进笔记", "把详解导出成 Word". It parses Skript/lecture-slide PDFs, extracts original figures, writes structured Chinese notes with LaTeX formulas, and builds a Word (.docx) version with native editable equations. Created for a German-taught electrical engineering course but generalizes to any lecture course.
 agent_created: true
 ---

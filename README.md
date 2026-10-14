@@ -34,7 +34,7 @@ mv lecture-notes-builder ~/.workbuddy/skills/
 依赖（一次性）：
 
 ```bash
-pip install pypandoc-binary python-docx
+pip install pypandoc-binary python-docx pillow numpy
 ```
 
 `pdftoppm` 优先用 MikTeX 自带的（Windows 常见路径 `D:\program file\MikTex\miktex\bin\x64\`），也可安装 Poppler。
