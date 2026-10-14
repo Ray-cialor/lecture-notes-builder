@@ -1,0 +1,4 @@
+pypandoc-binary
+python-docx
+pillow
+numpy
