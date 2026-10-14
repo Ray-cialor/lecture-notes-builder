@@ -1,4 +1,4 @@
 pypandoc-binary
 python-docx
-pillow
+pillow   # provides the PIL module
 numpy
