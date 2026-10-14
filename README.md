@@ -17,19 +17,21 @@
 
 ## 📦 安装
 
-方法一（推荐）：直接克隆
+本 skill 遵循 SKILL.md 规范，任何支持该规范的 AI 工具都能用——把 `lecture-notes-builder` 文件夹放进对应工具的**技能目录**即可：
+
+| 工具 | 技能目录 |
+|---|---|
+| WorkBuddy / CodeBuddy | `~/.workbuddy/skills/` |
+| Claude Code / Claude Desktop | `~/.claude/skills/` |
+
+方法一（推荐）：git clone
 
 ```bash
-cd ~/.workbuddy/skills/
+cd <上表对应的技能目录>
 git clone https://github.com/Ray-cialor/lecture-notes-builder.git
 ```
 
-方法二：在 GitHub 页面点 **Code → Download ZIP**，解压后把文件夹重命名为 `lecture-notes-builder`（zip 下载的目录名会带 `-main` 后缀，技能目录名必须与 `SKILL.md` 里的 `name` 字段一致），再移入技能目录：
-
-```bash
-# Windows / macOS / Linux
-mv lecture-notes-builder ~/.workbuddy/skills/
-```
+方法二：在 GitHub 页面点 **Code → Download ZIP**，解压后把文件夹重命名为 `lecture-notes-builder`（zip 下载的目录名会带 `-main` 后缀，技能目录名必须与 `SKILL.md` 里的 `name` 字段一致），再移入技能目录。
 
 依赖（一次性）：
 
