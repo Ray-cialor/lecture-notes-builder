@@ -1,6 +1,6 @@
 ---
 name: lecture-notes-builder
-description: This skill should be used when the user wants to create, update, or export detailed bilingual (German→Chinese) lecture study notes from course PDFs — e.g. "根据 Skript 第 X 章做详解", "把老师课上讲的内容补进笔记", "把详解导出成 Word". It parses Skript/lecture-slide PDFs, extracts original figures, writes structured Chinese notes with LaTeX formulas, and builds a Word (.docx) version with native editable equations. Created for the USST Elektrotechnik II workflow but generalizes to any lecture course.
+description: This skill should be used when the user wants to create, update, or export detailed bilingual (German→Chinese) lecture study notes from course PDFs — e.g. "根据 Skript 第 X 章做详解", "把老师课上讲的内容补进笔记", "把详解导出成 Word". It parses Skript/lecture-slide PDFs, extracts original figures, writes structured Chinese notes with LaTeX formulas, and builds a Word (.docx) version with native editable equations. Created for a German-taught electrical engineering course but generalizes to any lecture course.
 agent_created: true
 ---
 
@@ -12,7 +12,7 @@ agent_created: true
 
 | 输入 | 说明 |
 |---|---|
-| Skript PDF | 讲义（教材式，含目录/章节/例题），如 `USST_EL2__Skript_2012.pdf`。**必需** |
+| Skript PDF | 讲义（教材式，含目录/章节/例题），如 `Skript_WS2026.pdf`。**必需** |
 | Folien PDF | 课堂幻灯片 PDF。**可选**——常常比 Skript 晚发布；没有时用"无 Folien 模式"生成，之后补上再走更新模式 |
 | 课堂照片/口述（可选加分） | 老师口头补充了 Folien/Skript 上没有的内容时才有价值 |
 | 既有笔记（更新模式） | 用户要求"补进课堂内容/修正/Folien 出了补进笔记"时，在既有 md 上增量修改 |
