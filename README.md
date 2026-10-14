@@ -17,14 +17,18 @@
 
 ## 📦 安装
 
-把整个文件夹复制到 WorkBuddy / CodeBuddy 的用户级技能目录：
+方法一（推荐）：直接克隆
 
 ```bash
-# Windows
-cp -r lecture-notes-builder ~/.workbuddy/skills/
+cd ~/.workbuddy/skills/
+git clone https://github.com/Ray-cialor/lecture-notes-builder.git
+```
 
-# macOS / Linux
-cp -r lecture-notes-builder ~/.workbuddy/skills/
+方法二：在 GitHub 页面点 **Code → Download ZIP**，解压后把文件夹重命名为 `lecture-notes-builder`（zip 下载的目录名会带 `-main` 后缀，技能目录名必须与 `SKILL.md` 里的 `name` 字段一致），再移入技能目录：
+
+```bash
+# Windows / macOS / Linux
+mv lecture-notes-builder ~/.workbuddy/skills/
 ```
 
 依赖（一次性）：
