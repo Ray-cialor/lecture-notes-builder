@@ -61,7 +61,7 @@ agent_created: true
 
 课程图必须用**源 PDF 原图**（老师画的才算数），禁止 matplotlib 手绘替代。流程：
 
-1. 用 `pdftoppm`（MikTeX 自带；不在 PATH 时找 `D:\program file\MikTex\miktex\bin\x64\`）把目标页渲染成 PNG：`-r 300 -png`。**必须传 `C:/...` 风格路径**，Git Bash 的 `/c/...` 会报错
+1. 用 `pdftoppm`（poppler 工具集；macOS `brew install poppler`，Linux 装 poppler-utils，Windows 装 MikTeX 或 Poppler for Windows）把目标页渲染成 PNG：`-r 300 -png`。（Windows + Git Bash 环境必须传 `C:/...` 风格路径，`/c/...` 会报错；macOS/Linux 用正常路径即可）
 2. 用 `scripts/extract_figures.py` 裁剪。两种定位手段（战例见 references/pitfalls.md）：
    - **行带分析**：按行统计暗像素找出内容行带，确定 y 边界（防标题/正文残行混入、防切掉 x 轴刻度）
    - **颜色检测**：幻灯片里的蓝色信息框用 `(B-R>12)&(B>160)` 掩码 + 连通域标记精确定位（适合框与文字横向紧邻的场景）

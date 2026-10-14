@@ -20,19 +20,27 @@ spec.json 示例（坐标为整页宽高的分数）：
 依赖：pdftoppm（poppler/MikTeX）、Pillow、numpy。
 裁完的每张图必须用 Read 工具目检：完整、无杂物、标签没被切。
 """
-import argparse, json, os, re, subprocess, sys, tempfile
+import argparse, json, os, re, shutil, subprocess, sys, tempfile
 import numpy as np
 from PIL import Image
 
 def find_pdftoppm():
-    p = subprocess.run(["where", "pdftoppm"], capture_output=True, text=True)
-    if p.returncode == 0:
-        return "pdftoppm"
-    for cand in (r"D:\program file\MikTex\miktex\bin\x64", ):
+    exe = shutil.which("pdftoppm")
+    if exe:
+        return exe
+    cands = []
+    if os.name == "nt":  # Windows：MikTeX 自带 poppler 的常见安装位置
+        for base in (os.environ.get("LOCALAPPDATA", ""), os.environ.get("ProgramFiles", ""),
+                     os.environ.get("ProgramW6432", "")):
+            if base:
+                cands += [os.path.join(base, "Programs", "MikTeX", "miktex", "bin", "x64"),
+                          os.path.join(base, "MikTeX", "miktex", "bin", "x64")]
+    for cand in cands:
         exe = os.path.join(cand, "pdftoppm.exe")
         if os.path.exists(exe):
             return exe
-    raise SystemExit("找不到 pdftoppm，请安装 poppler 或 MikTeX")
+    raise SystemExit("找不到 pdftoppm，请安装 poppler（macOS: brew install poppler；"
+                     "Linux: apt/dnf install poppler-utils；Windows: 装 MikTeX 或 Poppler for Windows）")
 
 def render_pages(pdf, pages, dpi, workdir):
     """pages: '54-56' 或 '54,55'。返回 {page: png路径}，路径为 C:/ 风格。"""

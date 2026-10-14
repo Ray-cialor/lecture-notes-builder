@@ -11,8 +11,8 @@
 
 ## PDF 渲染与裁图
 
-5. **pdftoppm/pdftocairo 不认 Git Bash 的 `/c/...` 路径**，必须传 `C:/...` 风格，否则报 `Could not write image`，容易被误判成字体问题。
-6. `/tmp` 在 Git Bash 里实际是 `C:/Users/<user>/AppData/Local/Temp`——用 `Read` 工具查看渲染结果时要换算。
+5. **（Windows/Git Bash 环境）pdftoppm/pdftocairo 不认 `/c/...` 路径**，必须传 `C:/...` 风格，否则报 `Could not write image`，容易被误判成字体问题。macOS/Linux 无此问题。
+6. **（Windows/Git Bash 环境）**`/tmp` 实际是 `C:/Users/<user>/AppData/Local/Temp`——用 `Read` 工具查看渲染结果时要换算。
 7. pdftoppm 300dpi：幻灯片约 4000×2250px，Skript A4 约 2480×3508px。裁剪坐标一律用**页面宽高的分数**表达，与 DPI 无关。
 8. **幻灯片里图形与文字/其他图常常横向紧邻**，纯矩形裁剪必然互相污染。手段：
    - **行带分析**：按行统计暗像素（`min(R,G,B)<235` 计非白），得内容行带 → 精确定 y 边界（防正文残行、防切 x 轴刻度和轴标签）；
@@ -32,7 +32,7 @@
 17. docx 有问题**永远回查 md 重建**，不要手改 docx（下次重建就丢了）。
 18. pandoc 的 docx 目录是 TOC 域，打开后需右键"更新域"才有页码——交付时要提醒用户。
 19. 表格在 docx 里用 pandoc 默认样式（无表头加粗），必须后处理补：首行 bold + 表内 9.5pt。
-20. 用户环境：MikTeX 自带 poppler（`D:\program file\MikTex\miktex\bin\x64`）；LaTeX TeXLive 2025 也在 PATH（如需 PDF 输出可用）。
+20. pdftoppm 不在 PATH 时：macOS `brew install poppler`、Linux 装 poppler-utils、Windows 装 MikTeX（自带 poppler，通常在 `...\miktex\bin\x64`）或 Poppler for Windows。如需 PDF 输出可另装 TeX 发行版。
 
 ## 行内公式与 Word 可读性（v2 关键升级）
 
