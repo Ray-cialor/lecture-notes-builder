@@ -10,6 +10,16 @@
 import os, re, sys, tempfile
 
 # ---------- 阶段 4：md 自检 ----------
+def strip_row(line):
+    """把 Markdown 表格行拆成单元格（去掉首尾竖线）。"""
+    t = line.strip()
+    if t.startswith("|"):
+        t = t[1:]
+    if t.endswith("|"):
+        t = t[:-1]
+    return t.split("|")
+
+
 def check_md(path):
     errors, warns = [], []
     s = open(path, encoding="utf-8").read()
@@ -52,9 +62,70 @@ def check_md(path):
         for m in re.finditer(r"\]\(#([^)]+)\)", l):
             if m.group(1) not in heading_slugs:
                 errors.append(f"L{i}: 锚点 #{m.group(1)} 与任何标题的 slug 不匹配（用 --fix-toc 重新生成）")
-    # 5) $$ 块数统计
+    # 5) $$ 块内禁止 Markdown 表格语法（pandoc 会把表格当成公式内容 → 整块渲染失败）
+    #    注意：`|\bar{u}| = ...` 这种绝对值开头的公式不是表格，表格行必须首尾都是 `|`
+    in_math = False
+    for i, l in enumerate(lines, 1):
+        if l.strip() == "$$":
+            in_math = not in_math
+            continue
+        t = l.strip()
+        is_sep = re.match(r"^\|(\s*:?-{3,}:?\s*\|)+$", t) is not None
+        is_row = t.startswith("|") and t.endswith("|") and t.count("|") >= 2
+        if in_math and (is_sep or is_row):
+            errors.append(f"L{i}: $$ 公式块内出现表格语法：{t[:50]}（表格必须写在 $$ 之外）")
+    # 5.5) 正文行禁止出现裸竖线：部分渲染器会把整行按 | 切成一格格的"伪表格"
+    #      典型事故：$Z = |\underline{Z}|$、$|\bar{u}|$、图片 alt 里的 |ū|
+    in_math = False
+    for i, l in enumerate(lines, 1):
+        if l.strip() == "$$":
+            in_math = not in_math
+            continue
+        if in_math or "|" not in l:
+            continue
+        t = l.strip()
+        if t.startswith("|") or (t.startswith(">") and t[1:].strip().startswith("|")):
+            continue
+        errors.append(
+            f"L{i}: 正文行含竖线，可能被渲染成表格：{t[:50]}"
+            "（绝对值请写 \\lvert…\\rvert；标题/alt 里改用文字）"
+        )
+    # 6) 表格结构：表头非空、列数一致、单元格内 $ 成对（$|S|$ 被竖线切断是经典事故）
+    block, start = [], 0
+    for i, l in enumerate(lines + [""], 1):
+        if l.strip().startswith("|"):
+            if not block:
+                start = i
+            block.append((i, l))
+            continue
+        if block:
+            if len(block) >= 2:
+                head = strip_row(block[0][1])
+                ncol = len(head)
+                if not any(c.strip() for c in head):
+                    errors.append(f"L{start}: 表头为空（多半是改稿残留的空表）：{block[0][1].strip()[:40]}")
+                for ln, t in block:
+                    cells = strip_row(t)
+                    if len(cells) != ncol:
+                        errors.append(f"L{ln}: 表格列数不一致（表头 {ncol} 列、本行 {len(cells)} 列）")
+                    for k, c in enumerate(cells):
+                        if c.count("$") % 2:
+                            errors.append(f"L{ln} 第{k+1}格: 单元格内 $ 不成对（常见于 $|S|$ 被竖线切断 → 改 \\lvert\\rvert 或挪出表格）")
+            block = []
+    # 7) 偏好检查（警告级；换课程/换人时可按项目覆盖）
+    exam_at = next((k for k, l in enumerate(lines) if l.strip().startswith("## 备考清单")), len(lines))
+    for i, l in enumerate(lines[:exam_at], 1):
+        if "**考点**" in l or re.match(r"^\s*考点[：:]", l):
+            warns.append(f"L{i}: 正文出现「考点：」（偏好：考试提示一律收进文末《备考清单》）")
+    if "德语" in s:
+        warns.append(f"全文出现「德语」{s.count('德语')} 处（偏好：德文词前不加这两个字，直接给原词）")
+    n_h2 = sum(1 for l in lines if re.match(r"^##\s", l))
+    n_h3 = sum(1 for l in lines if re.match(r"^###\s", l))
+    if n_h2 >= 3 and n_h3 == 0:
+        warns.append("全文没有 ### 小标题：长节会失去分步提示（长章每 10–15 个正文段落配一个内容型 ### 较合适）")
+    # 8) 统计
     blocks = sum(1 for i, l in enumerate(lines) if l.strip() == "$$") // 2
-    print(f"$$ 显示公式块: {blocks}  行内公式对: {s.count('$')//1 - 0}")
+    print(f"$$ 显示公式块: {blocks}  行内公式对: {s.count('$')//1 - 0}  标题: ## {n_h2} / ### {n_h3}")
     for e in errors: print("[错误]", e)
     for w in warns: print("[建议]", w)
     return errors
@@ -159,9 +230,11 @@ def slug_of(heading_line):
             out.append(ch)
     return "".join(out)
 
-def fix_toc(path):
+def fix_toc(path, depth=2):
     lines = open(path, encoding="utf-8").read().split("\n")
-    heads = [l for l in lines if re.match(r"^##\s", l) and l.strip() != "## 目录"]
+    depth = max(2, min(int(depth), 4))
+    pat = r"^#{2,%d}\s" % depth
+    heads = [l for l in lines if re.match(pat, l) and l.strip() != "## 目录"]
     entries = "\n".join(f"- [{h.lstrip('# ')}](#{slug_of(h)})" for h in heads)
     new_toc = "## 目录\n\n" + entries + "\n"
     # 替换既有目录段（## 目录 到其后第一个非列表行）
@@ -178,7 +251,7 @@ def fix_toc(path):
 # ---------- 阶段 5：构建 ----------
 def build(md_path, out_path):
     import pypandoc
-    WIDTHS = {}  # 可选：按资产名硬编码宽度（cm）；留空则全部走自动定宽
+    WIDTHS = {}  # 可选：特定图名手工指定宽度(cm)；缺省全部按像素自动定宽
     s = open(md_path, encoding="utf-8").read()
 
     def im(m):
@@ -299,7 +372,10 @@ def validate_docx(out_path, md_path):
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     if "--fix-toc" in sys.argv:
-        fix_toc(args[0]); sys.exit(0)
+        depth = 2
+        if "--depth" in sys.argv:
+            depth = int(sys.argv[sys.argv.index("--depth") + 1])
+        fix_toc(args[0], depth); sys.exit(0)
     if "--check-only" in sys.argv:
         errs = check_md(args[0])
         sys.exit(1 if errs else 0)

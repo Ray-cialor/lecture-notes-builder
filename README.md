@@ -61,8 +61,9 @@ lecture-notes-builder/
 ├── references/
 │   └── pitfalls.md           # 实战坑清单（本 skill 一半的核心价值）
 └── scripts/
-    ├── extract_figures.py    # PDF 配图裁剪（行带分析 / 颜色检测）
-    └── md_to_docx.py         # 自检 --check-only / 目录修复 --fix-toc / docx 构建
+    ├── extract_figures.py    # PDF 配图裁剪（行带分析 / 颜色检测 / 涂白）
+    ├── md_to_docx.py         # 自检 --check-only / 目录修复 --fix-toc / docx 构建
+    └── katex_check.js        # 公式逐条 KaTeX 真渲染校验（Node.js）
 ```
 
 ## ⚠️ 说明

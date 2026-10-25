@@ -1,8 +1,8 @@
 ---
 name: lecture-notes-builder
-version: 1.0.0
+version: 1.1.0
 license: MIT
-description: This skill should be used when the user wants to create, update, or export detailed bilingual (German→Chinese) lecture study notes from course PDFs — e.g. "根据 Skript 第 X 章做详解", "把老师课上讲的内容补进笔记", "把详解导出成 Word". It parses Skript/lecture-slide PDFs, extracts original figures, writes structured Chinese notes with LaTeX formulas, and builds a Word (.docx) version with native editable equations. Created for a German-taught electrical engineering course but generalizes to any lecture course.
+description: This skill should be used when the user wants to create, update, or export detailed bilingual (German→Chinese) lecture study notes from course PDFs — e.g. "根据 Skript 第 X 章做详解", "把老师课上讲的内容补进笔记", "把详解导出成 Word". It parses Skript/lecture-slide PDFs, extracts original figures, writes structured Chinese notes with LaTeX formulas, and builds a Word (.docx) version with native editable equations. Created for a German-language university lecture workflow but generalizes to any lecture course.
 agent_created: true
 ---
 
@@ -14,7 +14,7 @@ agent_created: true
 
 | 输入 | 说明 |
 |---|---|
-| Skript PDF | 讲义（教材式，含目录/章节/例题），如 `Skript_WS2026.pdf`。**必需** |
+| Skript PDF | 讲义（教材式，含目录/章节/例题），如 `Skript_2012.pdf`。**必需** |
 | Folien PDF | 课堂幻灯片 PDF。**可选**——常常比 Skript 晚发布；没有时用"无 Folien 模式"生成，之后补上再走更新模式 |
 | 课堂照片/口述（可选加分） | 老师口头补充了 Folien/Skript 上没有的内容时才有价值 |
 | 既有笔记（更新模式） | 用户要求"补进课堂内容/修正/Folien 出了补进笔记"时，在既有 md 上增量修改 |
@@ -47,7 +47,7 @@ agent_created: true
 
 ## 流程总览（六个阶段）
 
-1. **解析源文件** → 2. **提取原图** → 3. **撰写/更新 md 笔记** → 4. **自检 md** ——每一轮的产出**只有 md**（含加入 Folien 内容的轮次）。**5. 构建 docx → 6. 校验 docx 仅在所有轮次结束、用户拍板定稿时执行一次**
+1. **解析源文件** → 2. **提取原图** → 3. **撰写/更新 md 笔记** → 4. **自检 md**（结构检查 + 公式渲染校验）——每一轮的产出**只有 md**（含加入 Folien 内容的轮次）。**5. 构建 docx → 6. 校验 docx 仅在所有轮次结束、用户拍板定稿时执行一次**
 
 ### 阶段 1：解析源文件
 
@@ -61,29 +61,30 @@ agent_created: true
 
 课程图必须用**源 PDF 原图**（老师画的才算数），禁止 matplotlib 手绘替代。流程：
 
-1. 用 `pdftoppm`（poppler 工具集；macOS `brew install poppler`，Linux 装 poppler-utils，Windows 装 MikTeX 或 Poppler for Windows）把目标页渲染成 PNG：`-r 300 -png`。（Windows + Git Bash 环境必须传 `C:/...` 风格路径，`/c/...` 会报错；macOS/Linux 用正常路径即可）
+1. 用 `pdftoppm`（poppler 工具集；macOS `brew install poppler`，Linux 装 poppler-utils，Windows 装 MikTeX 或 Poppler for Windows，MikTeX 用户在安装目录的 `bin\x64\` 下能找到）把目标页渲染成 PNG：`-r 300 -png`。（Windows + Git Bash 环境必须传 `C:/...` 风格路径，`/c/...` 会报错；macOS/Linux 用正常路径即可）
 2. 用 `scripts/extract_figures.py` 裁剪。两种定位手段（战例见 references/pitfalls.md）：
    - **行带分析**：按行统计暗像素找出内容行带，确定 y 边界（防标题/正文残行混入、防切掉 x 轴刻度）
    - **颜色检测**：幻灯片里的蓝色信息框用 `(B-R>12)&(B>160)` 掩码 + 连通域标记精确定位（适合框与文字横向紧邻的场景）
-3. **每张图裁完必须用 Read 工具目检**：完整、无杂物、标签没被切
+   - **页面文字压图例**：用 spec 里的 `wipe` 框先涂白再裁剪，`keep` 列出要保住的图例颜色（默认按饱和度切，彩色页眉清不掉）。与图例同色的文字（蓝色链接）颜色法分不开，只能把 wipe 框限制在图例上方或下移裁剪边界
+3. **每张图裁完必须用 ViewImage 目检**（`Read` 只返回图片路径，看不了图）：完整、无杂物、标签没被切。**同一路径的图 ViewImage 会返回缓存旧图，核验前先复制成新文件名**
 4. 输出到 `assets/`，文件名英文小写下划线，PNG 优先
 
 ### 阶段 3：撰写/更新 md 笔记
 
 **行文风格（核心要求）：跟随源文本**。按 Skript/Folien 自己的小节顺序与展开方式行文——概念怎么引入、公式怎么推、例题怎么给，笔记就怎么跟着走；不发明自己的叙述框架，**禁止使用"德语术语：/讲了什么：/为什么：/考试怎么用："这类标签化模板**。
 
-- 德语术语**随文出现**：首次出现的德语术语加粗并随文给出中文（如 **Widerstand 电阻**），不集中罗列、不设标签块
-- "术语/内容/思路类比/考点"四要素是**撰写时的内容覆盖清单**（自检用），不是输出模板——类比写成自然段落，考点写成行内或段末的简短提示（如"考点：……"），不搭空架子
+- 德语术语**随文出现**：首次出现的德语术语加粗并随文给出中文（如 **Wirkleistung 有功功率**），不集中罗列、不设标签块
+- "术语/内容/思路类比/考点"四要素是**撰写时的内容覆盖清单**（自检用），不是输出模板——类比写成自然段落，考点写成简短提示（**位置按项目偏好**：默认收进文末《备考清单》，正文不单起一段），不搭空架子
 - 全章级的内容放文末：术语速查表（德汉对照）+ 备考清单
-- **目录锚点必须脚本生成**：标题是"中文 + 德语 + 全角括号"混合体，手写 slug 必错。用 `md_to_docx.py --fix-toc 笔记.md` 从实际标题自动生成链接（github-slugger 规则：小写、去标点、空格转连字符、保留 CJK/变音字母），自检器会校验每个 `#slug` 与标题匹配；改标题后必须重跑
+- **目录锚点必须脚本生成**：标题是"中文 + 德语 + 全角括号"混合体，手写 slug 必错。用 `md_to_docx.py --fix-toc 笔记.md` 从实际标题自动生成链接（github-slugger 规则：小写、去标点、空格转连字符、保留 CJK/变音字母），自检器会校验每个 `#slug` 与标题匹配；改标题后必须重跑。章节很长时加 `--depth 3` 把三级小节也列进目录
 - 更新模式同样遵守：课堂补充融进对应位置的正文，不新增标签化小节
 
 **LaTeX 公式规则**（严格执行）：
 
 - 行内用 `$...$`，独立公式用 `$$ ... $$` 块（`$$` 单独占行，块前后各留一个空行）
 - **`$$` 块内部禁止出现空行**（会导致 pandoc 解析失败，docx 出现字面 `$$` 残留）
-- 下标规范：`$R_\text{ges}$`、`$U_\mathrm{q}$`、`$I_\text{ges}$`；禁止 Unicode 下标字符（₁₂₃，中文字体缺字形）
-- 单位用 `\mathrm{}`：`$4.0\times10^{-3}/\mathrm{K}$`、`$\Omega\cdot\mathrm{mm^2/m}$`
+- 下标规范：`$U_\mathrm{in}$`、`$I_\text{out}$`；禁止 Unicode 下标字符（₁₂₃，中文字体缺字形）
+- 单位用 `\mathrm{}`：`$4\times10^{-3}/\mathrm{K}$`、`$\Omega\cdot\mathrm{mm^2/m}$`
 - 中文串里不写公式，需要时把整个表达式放进 `$...$`
 
 **讲解深度档位**（用户可用关键词指定，可整章也可按小节混用，如"§4 标准档，§6 吃透档"；更新模式同样适用；默认标准档）：
@@ -104,15 +105,30 @@ agent_created: true
 
 **更新模式（第二轮）**：先读既有 md，把用户提供的课堂信息（口述/要点/照片）按内容归属插入对应小节正文（新增「PPT 详解」小节或补充例题），老师口头修正要标注来源，不确定对错的地方注明"以 PPT 为准"。
 
+### 默认偏好（可按项目覆盖；换课程/换用户时以项目说明为准）
+
+- **交付物默认只有 md**：不做 HTML/手机版单页，不主动改成网页版。
+- **术语首次出现**：德文加粗 + 中文 + 一句人话括注（`**Wirkleistung 有功功率**（真正变成热、光、转动的那部分）`）；**德文词前不写"德语"二字**，直接给 `（Produktformel）`、`（der Leistungsfaktor）`。
+- **考点位置**：一律收进文末《备考清单》，正文不写「考点：」行，保持叙述连贯。
+- **《备考清单》写"关键考试信息"，不是知识总结**：只写卷面约定（单位/符号方向）、课件勘误、题型与给分点（步骤顺序=分）、易错点、高频简答、德语名词题；不罗列公式概念，不用 `- [ ]` 勾选框；分 **★★★ 必背（≤3 条，考前 10 分钟只看这层）/ ★★ 会用 / ★ 细节** 三层，总量 ≤8 条，开头一句说明"速通只背第一层"。
+- **章节末尾四件套顺序固定**：术语速查表（德汉 + 一句话）→ 概念辨析与联系（易混对的差别 + 概念怎么串成网）→ 全章一句话总结 → 备考清单。
+- **图后紧跟本图解释**：一张图配一段说明，说明放在**图的下面**（不是把几张图的解读先堆成列表放在图前）。图解要紧贴自己那张图，读者视线不用来回跳；连续多图时每张图都在"图 → 说明 → 下一张图"的节奏里。
+
 ### 阶段 4：自检 md
 
-运行 `scripts/md_to_docx.py --check-only 笔记.md`，检查：
+**第一道：结构自检**（`scripts/md_to_docx.py --check-only 笔记.md`，出错即 exit 1）
 
-- `$` 定界符成对（逐行奇偶校验）
-- `$$` 块内部无空行、块前后有空行
-- 无 Unicode 下标字符、无 HTML 标签
-- 引用的 assets 文件都存在
-- 单行中不允许 `$$xxx$$` 与文字混排
+- `$` 定界符成对、`$$` 块内无空行、块前后有空行、单行内不混排 `$$xxx$$`
+- **`$$` 块内不得出现 Markdown 表格行**（`| a | b |`、`| --- |`）——pandoc 会把表格当公式内容，整块渲染失败
+- **表格结构**：表头不得全空（改稿残留的空表）、每行列数一致、单元格内 `$` 成对（`$|S|$` 的竖线会被当成列分隔，公式被切两半 → 改 `\lvert S \rvert` 或挪出表格）
+- **正文行不得含裸竖线 `|`**：`$Z = |\underline{Z}|$`、`$|\bar{u}|$` 这类会让渲染器把整行切成"伪表格"（首格套着正文、后面几格只剩公式碎片）。公式里改 `\lvert…\rvert`；标题/图片 alt 里改用文字（"取绝对值的平均"），改完重跑 `--fix-toc`
+- 无 Unicode 下标字符、无 HTML 标签、assets 图片都存在、每个 `#锚点` 与标题 slug 匹配
+- 偏好检查（警告级）：正文出现「考点：」、出现"德语"字样、全文 0 个 `###` 小标题
+
+**第二道：公式能不能真渲染**（`node scripts/katex_check.js 笔记.md`）
+
+`$` 配平不等于 LaTeX 合法。KaTeX 逐条渲染，语法错、命令写错会直接报行号。
+依赖 `npm i katex`（或用 `KATEX_PATH` 指向已装目录）；跑不了就跳过，但别把"配平"当成"公式没问题"。
 
 ### 阶段 5：构建 docx（仅导出 Word 时执行）
 
