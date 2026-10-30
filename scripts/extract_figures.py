@@ -2,16 +2,16 @@
 """从 PDF 页面提取插图（课程详解笔记流水线 · 阶段 2）
 
 用法：
-  python extract_figures.py --pdf 讲义.pdf --pages 1-3 --dpi 300 --out assets --spec spec.json
+  python extract_figures.py --pdf 讲义.pdf --pages 12-14 --dpi 300 --out assets --spec spec.json
 
 spec.json 示例（坐标为整页宽高的分数）：
 {
   "figures": [
-    {"name": "figure_1.png", "page": 1, "box": [0.17, 0.13, 0.99, 0.86], "trim": true, "pad": 14},
-    {"name": "figure_2.png", "page": 2, "box": [0.0625, 0.186, 0.63, 0.539],
+    {"name": "figure_1.png", "page": 12, "box": [0.17, 0.13, 0.99, 0.86], "trim": true, "pad": 14},
+    {"name": "figure_2.png", "page": 13, "box": [0.0625, 0.186, 0.63, 0.539],
      "wipe": [{"box": [0.06, 0.16, 0.46, 0.21],
                "keep": [[255, 0, 0], [0, 200, 60], [0, 99, 255]], "tol": 90}]},
-    {"name": "figure_3.png", "page": 3, "trim": true, "pad": 14,
+    {"name": "figure_3.png", "page": 14, "trim": true, "pad": 14,
      "compose": [
         {"box": [0.353, 0.222, 0.456, 0.363], "pad_left": 0.001},
         {"box": [0.783, 0.222, 0.886, 0.363], "pad_left": 0.001},

@@ -57,10 +57,14 @@ pip install pypandoc-binary python-docx pillow numpy
 
 ```
 lecture-notes-builder/
-├── SKILL.md                  # 技能主文档：六阶段流程 + 行文规范 + 公式规则
+├── SKILL.md                  # 技能主文档：七阶段流程（含阶段 0 自检）+ 行文规范 + 公式规则
+├── CHANGELOG.md              # 变更记录
 ├── references/
-│   └── pitfalls.md           # 实战坑清单（本 skill 一半的核心价值）
+│   └── pitfalls.md           # 实战坑清单（本 skill 一半的核心价值，50+ 条）
 └── scripts/
+    ├── preflight.py          # 阶段 0 开工自检：文件体检 + 条款级红线 + 文风扫描
+    ├── audit_pages.py        # 逐页覆盖审计：讲义哪几页没写进笔记
+    ├── check_terms.py        # 中德术语双向覆盖检查
     ├── extract_figures.py    # PDF 配图裁剪（行带分析 / 颜色检测 / 涂白）
     ├── md_to_docx.py         # 自检 --check-only / 目录修复 --fix-toc / docx 构建
     └── katex_check.js        # 公式逐条 KaTeX 真渲染校验（Node.js）

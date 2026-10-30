@@ -52,9 +52,10 @@ def check_md(path):
             errors.append(f"L{i}: 使用了 Unicode 下标字符（中文字体缺字形）：{l.strip()[:50]}")
         if re.search(r"<img|<p align", l, re.I):
             errors.append(f"L{i}: 出现 HTML 标签（预览器会过滤，改用 Markdown 图片语法）")
-    # 4) assets 引用存在
+    # 4) assets 引用存在（相对【md 所在目录】解析，不是相对 cwd——否则从仓库根跑会整篇误报，见 pitfalls 46）
+    base = os.path.dirname(os.path.abspath(path))
     for m in re.finditer(r"!\[[^\]]*\]\((assets/[^)]+)\)", s):
-        if not os.path.exists(m.group(1)):
+        if not os.path.exists(os.path.join(base, m.group(1))):
             errors.append(f"图片不存在：{m.group(1)}")
     # 4.5) 锚点链接校验：slug 必须与实际标题的 slug 一致（github-slugger 规则）
     heading_slugs = {slug_of(l) for l in lines if re.match(r"^##+\s", l)}
@@ -122,7 +123,36 @@ def check_md(path):
     n_h2 = sum(1 for l in lines if re.match(r"^##\s", l))
     n_h3 = sum(1 for l in lines if re.match(r"^###\s", l))
     if n_h2 >= 3 and n_h3 == 0:
-        warns.append("全文没有 ### 小标题：长节会失去分步提示（长章每 10–15 个正文段落配一个内容型 ### 较合适）")
+        warns.append("全文没有 ### 小标题：长节会失去分步提示（参照第一/三/四章，每章 10–15 个内容型 ###）")
+    # 7.5) 条款级红线（v4）：此前只在 preflight 里，跳过就没人管；现在并进自检
+    for i, l in enumerate(lines, 1):
+        if l.startswith("### ") and ("$" in l or "\\" in l):
+            errors.append(f"L{i}: ### 标题里有公式（--depth 3 会把源码原样带进目录）：{l.strip()[:40]}")
+    for m in re.finditer(r"!\[([^\]]*)\]", s):
+        if "$" in m.group(1) or "\\" in m.group(1):
+            errors.append(f"图注 alt 里带 LaTeX（图片加载失败时会显示源码）：{m.group(1)[:30]}")
+    for w in ["**考点**", "考点：", "- [ ]"]:
+        if w in s:
+            warns.append(f"出现禁用写法「{w}」{s.count(w)} 处（考点收进《备考清单》；清单不用勾选框）")
+    if re.search(r"\*\*\$[^$]*\$\*\*", s):
+        warns.append(f"加粗直接包公式 **$...$** {len(re.findall(r'\*\*\$[^$]*\$\*\*', s))} 处，部分渲染器会显示源码")
+    n_slash = len(re.findall(r"(?<![\\\w])\d+\s*/\s*\(", s))
+    if n_slash:
+        warns.append(f"斜杠分数 x/(y) {n_slash} 处，改成 \\frac")
+    if "## 备考清单" in s:
+        n_items = len(re.findall(r"(?m)^\d+\. ", s[s.index("## 备考清单"):]))
+        if n_items > 8:
+            warns.append(f"《备考清单》{n_items} 条，超过上限 8 条（只留卷面约定/易错/简答/名词）")
+    base_dir = os.path.dirname(os.path.abspath(path))
+    adir = os.path.join(base_dir, "assets")
+    if os.path.isdir(adir):
+        used = set(re.findall(r"!\[[^\]]*\]\((?:assets/)?([^)/]+)\)", s))
+        prefs = {u.split("_")[0] + "_" for u in used if "_" in u}
+        files = {f for f in os.listdir(adir) if any(f.startswith(p) for p in prefs)}
+        unused = sorted(files - used)
+        if unused:
+            warns.append(f"assets 里有 {len(unused)} 张图未被本篇引用：{', '.join(unused[:3])}（可能是该插的图漏了）")
+
     # 8) 统计
     blocks = sum(1 for i, l in enumerate(lines) if l.strip() == "$$") // 2
     print(f"$$ 显示公式块: {blocks}  行内公式对: {s.count('$')//1 - 0}  标题: ## {n_h2} / ### {n_h3}")
